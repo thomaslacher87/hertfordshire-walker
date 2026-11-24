@@ -1,47 +1,161 @@
-import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App';
+import { browse, walks } from './domain/browse';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+function LocationProbe() {
+  const { search } = useLocation();
+  return <output data-testid="query">{search}</output>;
+}
 
 function renderAt(path: string) {
+  vi.stubGlobal('scrollTo', vi.fn());
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AppRoutes />
+      <LocationProbe />
     </MemoryRouter>,
   );
 }
 
-describe('application routes', () => {
-  it('renders the countryside foundation at the root', () => {
-    renderAt('/');
-
-    expect(
-      screen.getByRole('heading', {
-        name: 'Walks worth looking forward to.',
-      }),
-    ).toBeInTheDocument();
+describe('catalogue browsing', () => {
+  it('keeps the trailing slash on catalogue links under the Pages base', () => {
+    vi.stubGlobal('scrollTo', vi.fn());
+    render(
+      <MemoryRouter
+        basename="/hertfordshire-walker/"
+        initialEntries={['/hertfordshire-walker/']}
+      >
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Next page' })).toHaveAttribute(
+      'href',
+      '/hertfordshire-walker/?page=2',
+    );
+    fireEvent.change(screen.getByRole('searchbox'), {
+      target: { value: 'Marathon Loop' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    expect(screen.getByRole('link', { name: 'Marathon Loop' })).toHaveAttribute(
+      'href',
+      '/hertfordshire-walker/walk/115',
+    );
   });
 
-  it('renders a walk route directly', () => {
-    renderAt('/walk/42');
-
-    expect(
-      screen.getByRole('heading', { name: 'Walk 42' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/reloading this URL directly verifies/i),
-    ).toBeInTheDocument();
+  it('makes every migrated walk reachable once through pagination', () => {
+    const pages = browse(new URLSearchParams()).totalPages;
+    const slugs = Array.from({ length: pages }, (_, index) =>
+      browse(new URLSearchParams({ page: String(index + 1) })).results.map(
+        ({ slug }) => slug,
+      ),
+    ).flat();
+    expect(slugs).toHaveLength(290);
+    expect(new Set(slugs)).toEqual(new Set(walks.map(({ slug }) => slug)));
   });
 
-  it('redirects an unknown route to the foundation', () => {
-    renderAt('/not-a-page');
-
+  it('restores combined filters and sort from a URL', () => {
+    const params = new URLSearchParams(
+      'route=circular&max_miles=4&feature=woodland&feature=pub&sort=shortest',
+    );
+    const { results } = browse(params);
+    expect(results.length).toBeGreaterThan(0);
     expect(
-      screen.getByRole('heading', {
-        name: 'Walks worth looking forward to.',
-      }),
-    ).toBeInTheDocument();
+      results.every(
+        (walk) =>
+          walk.route_type === 'circular' &&
+          walk.distance_miles <= 4 &&
+          walk.woodland &&
+          walk.pub,
+      ),
+    ).toBe(true);
+    expect(results.map((walk) => walk.distance_miles)).toEqual(
+      results.map((walk) => walk.distance_miles).sort((a, b) => a - b),
+    );
+    renderAt('/?' + params);
+    expect(screen.getByLabelText('Route type')).toHaveValue('circular');
+    expect(screen.getByLabelText('Woodland')).toBeChecked();
+    expect(screen.getByLabelText('Pub')).toBeChecked();
   });
+
+  it('replaces the page parameter when submitting a search', () => {
+    renderAt('/?page=2');
+    fireEvent.change(screen.getByRole('searchbox'), {
+      target: { value: 'Marathon Loop' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    expect(screen.getByTestId('query')).toHaveTextContent(
+      /^\?q=Marathon\+Loop$/,
+    );
+    expect(screen.getByRole('link', { name: 'Marathon Loop' })).toHaveAttribute(
+      'href',
+      '/walk/115',
+    );
+  });
+
+  it('opens a legacy deep link with route actions and gallery fallback', async () => {
+    renderAt('/walk/115');
+    expect(
+      screen.getByRole('heading', { name: 'Marathon Loop' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Open original route' }),
+    ).toHaveAttribute('href', expect.stringContaining('walk-115'));
+    expect(
+      screen.queryByRole('link', { name: 'Directions to start' }),
+    ).toBeNull();
+    expect(
+      within(screen.getByRole('region', { name: 'Photos' })).getByRole('link'),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Print walk' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy walk link' }));
+    expect(
+      await screen.findByRole('textbox', { name: 'Walk link' }),
+    ).toHaveValue(new URL('/walk/115', window.location.origin).href);
+  });
+
+  it('preserves the catalogue query when returning from a walk', () => {
+    renderAt('/?q=marathon+loop');
+    fireEvent.click(screen.getByRole('link', { name: 'Marathon Loop' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Back to walks' }));
+    expect(screen.getByRole('searchbox')).toHaveValue('marathon loop');
+  });
+
+  it('offers a route back from a missing walk', () => {
+    renderAt('/walk/does-not-exist');
+    expect(
+      screen.getByRole('heading', { name: 'Page not found' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Browse the walk catalogue' }),
+    ).toHaveAttribute('href', '/');
+  });
+
+  it('renders every legacy detail route without console errors', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      for (const walk of walks) {
+        const view = renderAt(`/walk/${walk.slug}`);
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+          walk.title,
+        );
+        view.unmount();
+      }
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
+  }, 15_000);
 });

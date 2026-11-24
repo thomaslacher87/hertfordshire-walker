@@ -27,6 +27,25 @@ router on GitHub Pages.
 4. Confirm keyboard focus is visible on every link.
 5. Confirm the current production catalogue has not changed.
 
+## Stage 3: catalogue browsing
+
+Run `npm run build` and `npm exec vite preview`, then open
+`/hertfordshire-walker/` on the printed local server. The browse experience
+uses the checked-in catalogue snapshot. Filter and sort choices are shareable
+through the catalogue URL. Photos with no recorded licence use a link to the
+publisher's gallery.
+
+### Manual Stage 3 checks
+
+1. At desktop and mobile widths, search for Marathon Loop and confirm it links
+   to `/hertfordshire-walker/walk/115`.
+2. Combine terrain, an amenity and a distance limit. Sort by shortest, then
+   reload the copied catalogue URL. Confirm the same fields and results.
+3. Page through the catalogue and use Back to walks from a result. Confirm
+   the prior filters and page return.
+4. Refresh walks 1 and 115 directly. Check source links, directions on walk 1,
+   photo and missing-coordinate fallbacks, link copying, and the print view.
+
 ## Stage 2: catalogue schema and migration
 
 Stage 2 adds the validated catalogue model, a deterministic migration of all
