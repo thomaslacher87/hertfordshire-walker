@@ -4,3 +4,5 @@ index-ghpages.js
 index-DqUEMzlF.css
 walks.json
 404.html
+data/catalogue/*.json
+data/google-sheets/*.csv

@@ -1,10 +1,10 @@
-name: Stage 1 foundation
+name: Staged rebuild checks
 
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [stage-1-foundation]
+    branches: ['stage-*']
   workflow_dispatch:
 
 permissions:
@@ -26,12 +26,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify foundation
+      - name: Verify staged rebuild
         run: npm run check
 
       - name: Upload Pages-ready preview
         uses: actions/upload-artifact@v4
         with:
-          name: stage-1-pages-preview
+          name: staged-pages-preview
           path: dist
           if-no-files-found: error

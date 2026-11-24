@@ -26,3 +26,29 @@ router on GitHub Pages.
 3. Refresh the walk route and confirm the placeholder remains visible.
 4. Confirm keyboard focus is visible on every link.
 5. Confirm the current production catalogue has not changed.
+
+## Stage 2: catalogue schema and migration
+
+Stage 2 adds the validated catalogue model, a deterministic migration of all
+290 legacy walks, Google Sheets-compatible CSV templates, and a quality report.
+The migration preserves numeric walk slugs and leaves unsupported values blank
+or unchecked. Wheelchair-friendly and dog-friendly fields are deliberately not
+part of the catalogue.
+
+```bash
+npm run catalogue:migrate
+npm run catalogue:check
+```
+
+See [docs/catalogue-schema.md](docs/catalogue-schema.md) for the attribute
+definitions, evidence policy, and the process for adding a walk.
+
+## Manual Stage 2 checks
+
+1. Review `data/catalogue/migration-report.json` and confirm every warning is a
+   missing or questionable source value rather than an invented replacement.
+2. Import each CSV in `data/google-sheets/` into an empty Sheet and confirm the
+   Walks, Images, and Lists headers and row counts.
+3. Spot-check several numeric slugs against `walks.json`, including walk 115.
+4. Confirm no wheelchair-friendly or dog-friendly column exists.
+5. Confirm the current production catalogue has not changed.

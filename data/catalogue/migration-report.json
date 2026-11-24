@@ -1,0 +1,58 @@
+{
+  "source_file": "walks.json",
+  "source_sha256": "718e35cff3ccb9f16892ffc5209c96b46c852def9d907e847d5403b71519e4f9",
+  "migrated_walks": 290,
+  "migrated_images": 845,
+  "validation_errors": [],
+  "quality_warnings": {
+    "missing_coordinates": [
+      "115"
+    ],
+    "missing_station": [
+      "115"
+    ],
+    "missing_gallery": [
+      "70",
+      "71"
+    ],
+    "unknown_route_type": [
+      "15",
+      "56",
+      "110",
+      "175",
+      "233",
+      "234"
+    ],
+    "ambiguous_stiles_or_steps": [
+      "3",
+      "109",
+      "120",
+      "157",
+      "177",
+      "189",
+      "195",
+      "207",
+      "214",
+      "217",
+      "229",
+      "244",
+      "278",
+      "297"
+    ],
+    "unmapped_terrain_tags": [],
+    "missing_last_verified_date_count": 290,
+    "missing_image_licence_count": 845,
+    "legacy_id_gaps": [
+      23,
+      41,
+      42,
+      122,
+      139,
+      150,
+      179,
+      206,
+      210,
+      235
+    ]
+  }
+}
