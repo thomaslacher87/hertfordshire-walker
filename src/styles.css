@@ -349,6 +349,77 @@ figcaption {
   display: none;
 }
 
+.nearby-panel {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: var(--paper);
+}
+.nearby-panel p {
+  margin: 0.5rem 0 0;
+}
+.nearby-controls {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) 7rem auto auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+.place-results {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  gap: 0.5rem;
+  padding: 0;
+  margin-bottom: 0;
+}
+.place-results button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  color: var(--forest);
+  background: var(--moss);
+  cursor: pointer;
+}
+.view-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+.map-panel {
+  margin: 0 0 1.5rem;
+}
+.walk-map {
+  height: clamp(20rem, 55vh, 34rem);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--moss);
+  isolation: isolate;
+}
+.walk-map-pin {
+  background: var(--forest);
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--forest);
+}
+.map-status {
+  margin-top: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.55rem;
+  background: var(--moss);
+}
+
+@media (max-width: 48rem) {
+  .nearby-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+@media (max-width: 28rem) {
+  .nearby-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 43rem) {
   .quick-filters {
     grid-template-columns: 1fr;

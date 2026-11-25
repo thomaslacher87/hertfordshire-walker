@@ -37,3 +37,27 @@ for (const assetPath of assetPaths) {
 console.log(
   `Verified Pages fallback and ${assetPaths.length} base-prefixed assets.`,
 );
+
+const manifest = JSON.parse(
+  await readFile(resolve(outputDirectory, '.vite/manifest.json'), 'utf8'),
+);
+if (!manifest['src/WalkMap.tsx']?.isDynamicEntry) {
+  throw new Error('The lazy map entry is missing from the Pages manifest.');
+}
+for (const entry of Object.values(manifest)) {
+  for (const dependency of [
+    ...(entry.imports ?? []),
+    ...(entry.dynamicImports ?? []),
+  ]) {
+    if (!manifest[dependency])
+      throw new Error(`Build dependency missing: ${dependency}`);
+  }
+  for (const asset of [
+    entry.file,
+    ...(entry.css ?? []),
+    ...(entry.assets ?? []),
+  ]) {
+    await stat(resolve(outputDirectory, asset));
+  }
+}
+console.log('Verified the map chunk, styles, and manifest dependencies.');

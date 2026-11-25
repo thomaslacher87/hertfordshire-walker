@@ -27,6 +27,30 @@ router on GitHub Pages.
 4. Confirm keyboard focus is visible on every link.
 5. Confirm the current production catalogue has not changed.
 
+## Stage 4: map and nearby search
+
+Open Map from the catalogue or load `/hertfordshire-walker/?view=map` directly.
+The map shows all matching walk starts, while the list remains paginated.
+Manual place suggestions come from named walk starts and use an in-memory
+cache. Nearby search measures straight-line distance. Device location stays
+in the current page session and is omitted from shareable URLs.
+
+The map loads OpenStreetMap tiles when opened and uses normal browser caching.
+`VITE_MAP_TILE_URL` can override the tile URL at build time for an
+OpenStreetMap-derived provider or a test fixture. Update the attribution if the
+replacement provider requires additional credits.
+
+### Manual Stage 4 checks
+
+1. Cold-refresh the built map URL. Confirm tiles, clustered markers and
+   OpenStreetMap attribution appear. Open a marker and follow its walk link.
+2. Apply a terrain or amenity filter. Compare the map count with the filtered
+   list, and confirm changing list pages does not change the map count.
+3. Search for North Mymms, choose a named start and change the radius. Confirm
+   that the result count changes and the closest walks appear first.
+4. Deny browser location and use manual place search. Simulate a tile outage
+   and confirm the results list stays usable.
+
 ## Stage 3: catalogue browsing
 
 Run `npm run build` and `npm exec vite preview`, then open

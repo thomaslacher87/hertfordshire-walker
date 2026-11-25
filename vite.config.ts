@@ -54,6 +54,7 @@ export default defineConfig({
   plugins: [react(), publicCatalogue()],
   build: {
     outDir: 'dist',
+    manifest: true,
     sourcemap: true,
     rollupOptions: {
       output: {

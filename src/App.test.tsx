@@ -4,11 +4,13 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App';
-import { browse, walks } from './domain/browse';
+import { browse, searchPlaces, walks } from './domain/browse';
+import { hasCoordinates } from './domain/nearby';
 
 afterEach(() => {
   cleanup();
@@ -45,7 +47,7 @@ describe('catalogue browsing', () => {
       'href',
       '/hertfordshire-walker/?page=2',
     );
-    fireEvent.change(screen.getByRole('searchbox'), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search walks' }), {
       target: { value: 'Marathon Loop' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
@@ -92,7 +94,7 @@ describe('catalogue browsing', () => {
 
   it('replaces the page parameter when submitting a search', () => {
     renderAt('/?page=2');
-    fireEvent.change(screen.getByRole('searchbox'), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search walks' }), {
       target: { value: 'Marathon Loop' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
@@ -130,7 +132,9 @@ describe('catalogue browsing', () => {
     renderAt('/?q=marathon+loop');
     fireEvent.click(screen.getByRole('link', { name: 'Marathon Loop' }));
     fireEvent.click(screen.getByRole('link', { name: 'Back to walks' }));
-    expect(screen.getByRole('searchbox')).toHaveValue('marathon loop');
+    expect(screen.getByRole('searchbox', { name: 'Search walks' })).toHaveValue(
+      'marathon loop',
+    );
   });
 
   it('offers a route back from a missing walk', () => {
@@ -158,4 +162,109 @@ describe('catalogue browsing', () => {
       errors.mockRestore();
     }
   }, 15_000);
+});
+
+describe('map and nearby search', () => {
+  it('uses the full filtered set for the map, irrespective of the list page', () => {
+    const query = 'feature=woodland&feature=pub&max_miles=4';
+    const first = browse(new URLSearchParams(query));
+    const second = browse(new URLSearchParams(query + '&page=2&view=map'));
+    expect(second.matches).toEqual(first.matches);
+    expect(second.results).not.toEqual(first.results);
+    expect(second.matches.filter(hasCoordinates).length).toBeGreaterThan(12);
+  });
+
+  it('debounces local place lookup and combines nearby distance with catalogue filters', async () => {
+    expect(searchPlaces(' NORTH   MYMMS ')).toBe(searchPlaces('north mymms'));
+    renderAt('/?feature=pub');
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a place' }), {
+      target: { value: 'North Mymms' },
+    });
+    expect(screen.queryByRole('list', { name: 'Matching places' })).toBeNull();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'North Mymms (Walk 1)' }),
+    );
+    expect(screen.getByRole('combobox', { name: 'Sort by' })).toHaveValue(
+      'nearest',
+    );
+    expect(screen.getByText('0.0 mi from North Mymms')).toBeVisible();
+    expect(screen.getByTestId('query')).toHaveTextContent('?feature=pub');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear nearby' }));
+    expect(screen.queryByText('0.0 mi from North Mymms')).toBeNull();
+  });
+
+  it('keeps the list accessible when geolocation is denied', () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'geolocation');
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((_success, fail) => fail({ code: 1 })),
+      },
+    });
+    try {
+      renderAt('/');
+      fireEvent.click(screen.getByText('Find nearby walks', { exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+      expect(screen.getByText(/Could not get your location/)).toBeVisible();
+      expect(screen.getByRole('heading', { name: '290 walks' })).toBeVisible();
+    } finally {
+      if (original) Object.defineProperty(navigator, 'geolocation', original);
+      else Reflect.deleteProperty(navigator, 'geolocation');
+    }
+  });
+
+  it('uses device coordinates for nearby search without putting them in the URL', () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'geolocation');
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((success) =>
+          success({ coords: { latitude: 51.724143, longitude: -0.203483 } }),
+        ),
+      },
+    });
+    try {
+      renderAt('/?feature=pub');
+      fireEvent.click(screen.getByText('Find nearby walks', { exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+      expect(screen.getByText('0.0 mi from Your location')).toBeVisible();
+      expect(screen.getByTestId('query').textContent).toBe('?feature=pub');
+    } finally {
+      if (original) Object.defineProperty(navigator, 'geolocation', original);
+      else Reflect.deleteProperty(navigator, 'geolocation');
+    }
+  });
+
+  it('keeps markers and results available when tile images fail', async () => {
+    const width = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockReturnValue(800);
+    const height = vi
+      .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+      .mockReturnValue(500);
+    try {
+      renderAt('/?view=map&q=north+mymms+loop');
+      const map = await screen.findByRole('region', {
+        name: 'Map of walk starts',
+      });
+      const tiles = await waitFor(() => {
+        const pending = map.querySelectorAll('.leaflet-tile');
+        expect(pending.length).toBeGreaterThan(0);
+        return pending;
+      });
+      for (const tile of tiles) fireEvent.error(tile);
+      expect(
+        await screen.findByText(/map tiles are unavailable/),
+      ).toBeVisible();
+      expect(
+        map.querySelector('.walk-map-pin, .marker-cluster'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: 'North Mymms Loop' }),
+      ).toBeVisible();
+    } finally {
+      width.mockRestore();
+      height.mockRestore();
+    }
+  });
 });

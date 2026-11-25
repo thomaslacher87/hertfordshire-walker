@@ -1,5 +1,8 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -23,6 +26,11 @@ import {
   sortOptions,
 } from './domain/browse';
 import type { WalkImage } from './domain/catalogue';
+import { hasCoordinates } from './domain/nearby';
+import { MapBoundary } from './MapBoundary';
+import { NearbyControls, type Origin } from './NearbyControls';
+
+const WalkMap = lazy(() => import('./WalkMap'));
 
 function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -55,9 +63,27 @@ function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function Catalogue() {
+function Catalogue({
+  origin,
+  onOrigin,
+  radius,
+  onRadius,
+}: {
+  origin: Origin | null;
+  onOrigin: (origin: Origin | null) => void;
+  radius: number;
+  onRadius: (radius: number) => void;
+}) {
   const [params, setParams] = useSearchParams();
-  const result = browse(params);
+  const result = useMemo(
+    () => browse(params, origin ? { origin, radiusMiles: radius } : undefined),
+    [params, origin, radius],
+  );
+  const mapView = params.get('view') === 'map';
+  const pins = useMemo(
+    () => result.matches.filter(hasCoordinates),
+    [result.matches],
+  );
   const resultsHeading = useRef<HTMLHeadingElement>(null);
   const previousPage = useRef(result.page);
   useEffect(() => {
@@ -65,8 +91,12 @@ function Catalogue() {
     previousPage.current = result.page;
   }, [result.page]);
   const query = params.get('q') ?? '';
+  const availableSorts = origin
+    ? [['nearest', 'Nearest first'] as const, ...sortOptions]
+    : sortOptions;
   const sort =
-    sortOptions.find(([key]) => key === params.get('sort'))?.[0] ?? 'number';
+    availableSorts.find(([key]) => key === params.get('sort'))?.[0] ??
+    (origin ? 'nearest' : 'number');
   const refinementCount =
     result.selectedFeatures.length +
     result.selections.filter(({ selected }) => selected).length +
@@ -74,13 +104,30 @@ function Catalogue() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const next = new URLSearchParams();
+    const next = new URLSearchParams(mapView ? { view: 'map' } : {});
     for (const [key, value] of new FormData(event.currentTarget)) {
       const input = String(value).trim();
-      if (input && !(key === 'sort' && input === 'number'))
+      if (
+        input &&
+        !(key === 'sort' && input === (origin ? 'nearest' : 'number'))
+      )
         next.append(key, input);
     }
     setParams(next);
+  }
+
+  function resetPage() {
+    if (!params.has('page')) return;
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    setParams(next);
+  }
+
+  function viewLink(showMap: boolean) {
+    const next = new URLSearchParams(params);
+    if (showMap) next.set('view', 'map');
+    else next.delete('view');
+    return { pathname: '/', search: next.toString() };
   }
 
   function pageLink(page: number) {
@@ -101,7 +148,9 @@ function Catalogue() {
         </p>
       </div>
       <form
-        key={JSON.stringify([...params].filter(([key]) => key !== 'page'))}
+        key={JSON.stringify(
+          [...params].filter(([key]) => key !== 'page' && key !== 'view'),
+        )}
         className="filters"
         onSubmit={submit}
       >
@@ -117,8 +166,12 @@ function Catalogue() {
           </label>
           <label>
             Sort by
-            <select name="sort" defaultValue={sort}>
-              {sortOptions.map(([key, name]) => (
+            <select
+              key={origin ? 'nearby' : 'catalogue'}
+              name="sort"
+              defaultValue={sort}
+            >
+              {availableSorts.map(([key, name]) => (
                 <option key={key} value={key}>
                   {name}
                 </option>
@@ -191,6 +244,61 @@ function Catalogue() {
           </button>
         </details>
       </form>
+      <NearbyControls
+        origin={origin}
+        radius={radius}
+        onOrigin={(place) => {
+          onOrigin(place);
+          resetPage();
+        }}
+        onRadius={(miles) => {
+          onRadius(miles);
+          resetPage();
+        }}
+      />
+      <nav className="view-switch" aria-label="Catalogue view">
+        <Link
+          className={`button button-${mapView ? 'secondary' : 'primary'}`}
+          to={viewLink(false)}
+          aria-current={!mapView ? 'page' : undefined}
+        >
+          List
+        </Link>
+        <Link
+          className={`button button-${mapView ? 'primary' : 'secondary'}`}
+          to={viewLink(true)}
+          aria-current={mapView ? 'page' : undefined}
+        >
+          Map
+        </Link>
+      </nav>
+      {mapView && (
+        <section className="map-panel" aria-labelledby="map-heading">
+          <div className="results-heading">
+            <h2 id="map-heading">Walk starts on the map</h2>
+            <a className="text-link" href="#results-title">
+              Jump to results list
+            </a>
+          </div>
+          {pins.length === 0 ? (
+            <p>No matching walks have map coordinates.</p>
+          ) : (
+            <>
+              <p className="muted">
+                {pins.length} {pins.length === 1 ? 'start' : 'starts'} on the
+                map.
+                {pins.length < result.total &&
+                  ' Walks without coordinates are in the list below.'}
+              </p>
+              <MapBoundary>
+                <Suspense fallback={<p role="status">Loading the map…</p>}>
+                  <WalkMap pins={pins} catalogueSearch={params.toString()} />
+                </Suspense>
+              </MapBoundary>
+            </>
+          )}
+        </section>
+      )}
       <section aria-labelledby="results-title" className="results">
         <div className="results-heading">
           <h2
@@ -201,14 +309,18 @@ function Catalogue() {
           >
             {result.total} {result.total === 1 ? 'walk' : 'walks'}
           </h2>
-          {params.size > 0 && (
-            <Link to="/" className="text-link">
+          {[...params.keys()].some((key) => key !== 'view') && (
+            <Link to={mapView ? '/?view=map' : '/'} className="text-link">
               Clear filters
             </Link>
           )}
         </div>
         {result.total === 0 && (
-          <p>Try a different search or remove some filters.</p>
+          <p>
+            {origin
+              ? 'Try a wider radius, a different start, or fewer filters.'
+              : 'Try a different search or remove some filters.'}
+          </p>
         )}
         {result.total > 0 && (
           <ul className="walk-grid">
@@ -231,6 +343,12 @@ function Catalogue() {
                     ` · ${label(walk.route_type)}`}{' '}
                   · {walk.start_location}
                 </p>
+                {result.distances.has(walk.slug) && (
+                  <p className="walk-meta">
+                    {result.distances.get(walk.slug)?.toFixed(1)} mi from{' '}
+                    {origin?.label}
+                  </p>
+                )}
                 <p className="walk-summary">{walk.summary}</p>
               </li>
             ))}
@@ -478,10 +596,22 @@ function NotFound() {
 }
 
 export function AppRoutes() {
+  const [origin, setOrigin] = useState<Origin | null>(null);
+  const [radius, setRadius] = useState(5);
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Catalogue />} />
+        <Route
+          path="/"
+          element={
+            <Catalogue
+              origin={origin}
+              onOrigin={setOrigin}
+              radius={radius}
+              onRadius={setRadius}
+            />
+          }
+        />
         <Route path="/walk/:slug" element={<WalkDetail />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

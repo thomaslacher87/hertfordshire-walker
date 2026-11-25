@@ -8,6 +8,12 @@ import {
   seasonColumns,
   terrainColumns,
 } from './catalogue-options';
+import {
+  hasCoordinates,
+  makePlaceSearch,
+  milesBetween,
+  type Nearby,
+} from './nearby';
 
 export { walks, images };
 export const bySlug = new Map(walks.map((walk) => [walk.slug, walk]));
@@ -41,6 +47,7 @@ export function label(value: string) {
 }
 
 const published = walks.filter((walk) => walk.status === 'published');
+export const searchPlaces = makePlaceSearch(published);
 function distinct(field: 'source_name' | 'area') {
   return [...new Set(published.flatMap((walk) => walk[field] ?? []))].sort();
 }
@@ -133,7 +140,7 @@ const collator = new Intl.Collator('en-GB', {
   sensitivity: 'base',
 });
 
-export function browse(params: URLSearchParams) {
+export function browse(params: URLSearchParams, nearby?: Nearby) {
   const query = normalize(params.get('q') ?? '')
     .trim()
     .split(/\s+/);
@@ -150,24 +157,39 @@ export function browse(params: URLSearchParams) {
     ...filter,
     value: numericValue(params.get(filter.key)),
   }));
-  const matches = published.filter(
-    (walk) =>
-      query.every((word) => searchText.get(walk.slug)?.includes(word)) &&
-      selectedFeatures.every((feature) => walk[feature]) &&
-      selections.every(
-        ({ field, selected }) => !selected || walk[field] === selected,
-      ) &&
-      bounds.every(({ field, bound, value }) => {
-        const actual = walk[field];
-        return (
-          value === null ||
-          (actual !== null &&
-            (bound === 'min' ? actual >= value : actual <= value))
-        );
-      }),
-  );
+  const distances = new Map<string, number>();
+  const matches = published
+    .filter(
+      (walk) =>
+        query.every((word) => searchText.get(walk.slug)?.includes(word)) &&
+        selectedFeatures.every((feature) => walk[feature]) &&
+        selections.every(
+          ({ field, selected }) => !selected || walk[field] === selected,
+        ) &&
+        bounds.every(({ field, bound, value }) => {
+          const actual = walk[field];
+          return (
+            value === null ||
+            (actual !== null &&
+              (bound === 'min' ? actual >= value : actual <= value))
+          );
+        }),
+    )
+    .filter((walk) => {
+      if (!nearby) return true;
+      if (!hasCoordinates(walk)) return false;
+      const distance = milesBetween(nearby.origin, walk);
+      if (distance > nearby.radiusMiles) return false;
+      distances.set(walk.slug, distance);
+      return true;
+    });
   const sort = params.get('sort');
   matches.sort((a, b) => {
+    if (nearby && (sort === 'nearest' || !sort)) {
+      const difference =
+        (distances.get(a.slug) ?? 0) - (distances.get(b.slug) ?? 0);
+      if (difference !== 0) return difference;
+    }
     if (sort === 'title')
       return (
         collator.compare(a.title, b.title) || collator.compare(a.slug, b.slug)
@@ -185,6 +207,8 @@ export function browse(params: URLSearchParams) {
       ? Math.min(requested, totalPages)
       : 1;
   return {
+    matches,
+    distances,
     page,
     totalPages,
     total: matches.length,
