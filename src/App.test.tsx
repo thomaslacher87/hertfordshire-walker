@@ -64,7 +64,8 @@ describe('catalogue browsing', () => {
         ({ slug }) => slug,
       ),
     ).flat();
-    expect(slugs).toHaveLength(290);
+    expect(slugs.filter((slug) => /^[0-9]+$/.test(slug))).toHaveLength(290);
+    expect(slugs).toHaveLength(walks.length);
     expect(new Set(slugs)).toEqual(new Set(walks.map(({ slug }) => slug)));
   });
 
@@ -206,7 +207,9 @@ describe('map and nearby search', () => {
       fireEvent.click(screen.getByText('Find nearby walks', { exact: true }));
       fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
       expect(screen.getByText(/Could not get your location/)).toBeVisible();
-      expect(screen.getByRole('heading', { name: '290 walks' })).toBeVisible();
+      expect(
+        screen.getByRole('heading', { name: `${walks.length} walks` }),
+      ).toBeVisible();
     } finally {
       if (original) Object.defineProperty(navigator, 'geolocation', original);
       else Reflect.deleteProperty(navigator, 'geolocation');
@@ -267,4 +270,40 @@ describe('map and nearby search', () => {
       height.mockRestore();
     }
   });
+});
+
+describe('curated publisher samples', () => {
+  it.each([
+    [
+      'Fancy Free Walks',
+      'fancy-free--kimpton',
+      'Ayot St. Lawrence and Kimpton',
+    ],
+    ['Saturday Walkers Club', 'swc--168', 'Broxbourne Circular'],
+    [
+      'Chiltern Society',
+      'chiltern-society--tring-winter-walk',
+      'Tring winter walk',
+    ],
+  ])(
+    'lists and opens the %s sample with its original source',
+    (publisher, slug, title) => {
+      renderAt('/?' + new URLSearchParams({ source: publisher }));
+      expect(screen.getByRole('heading', { name: '1 walk' })).toBeVisible();
+      const link = screen.getByRole('link', { name: title });
+      expect(link).toHaveAttribute('href', '/walk/' + slug);
+      fireEvent.click(link);
+      expect(
+        screen.getByRole('heading', { name: title, level: 1 }),
+      ).toBeVisible();
+      const walk = walks.find((record) => record.slug === slug);
+      expect(
+        screen.getByRole('link', { name: 'Open original route' }),
+      ).toHaveAttribute('href', walk?.source_url);
+      expect(
+        screen.queryByRole('link', { name: 'Directions to start' }),
+      ).toBeNull();
+      expect(screen.queryByRole('img')).toBeNull();
+    },
+  );
 });

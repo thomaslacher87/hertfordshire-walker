@@ -327,7 +327,9 @@ function Catalogue({
             {result.results.map((walk) => (
               <li className="walk-card" key={walk.slug}>
                 <p className="walk-meta">
-                  {walk.source_name} · Walk {walk.source_walk_id}
+                  {walk.source_name}
+                  {/^[0-9]+$/.test(walk.source_walk_id) &&
+                    ` · Walk ${walk.source_walk_id}`}
                 </p>
                 <h3>
                   <Link
@@ -490,7 +492,9 @@ function WalkDetail() {
         Back to walks
       </Link>
       <p className="eyebrow">
-        {walk.source_name} · Walk {walk.source_walk_id}
+        {walk.source_name}
+        {/^[0-9]+$/.test(walk.source_walk_id) &&
+          ` · Walk ${walk.source_walk_id}`}
       </p>
       <h1>{walk.title}</h1>
       {walk.status === 'archived' && (

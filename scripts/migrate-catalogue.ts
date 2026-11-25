@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
+import { loadCuratedWalks } from './curated-catalogue';
 import {
   amenityColumns,
   catalogueSchema,
@@ -241,7 +242,13 @@ for (const legacyWalk of legacyWalks) {
   });
 }
 
-const validatedCatalogue = catalogueSchema.parse({ walks, images });
+const curatedFile = 'data/sources/stage-5-samples.json';
+const curatedText = await readFile(resolve(curatedFile), 'utf8');
+const curated = loadCuratedWalks(JSON.parse(curatedText));
+const validatedCatalogue = catalogueSchema.parse({
+  walks: [...walks, ...curated],
+  images,
+});
 const allIds = legacyWalks.map((walk) => walk.id);
 const minimumId = Math.min(...allIds);
 const maximumId = Math.max(...allIds);
@@ -254,8 +261,21 @@ const missingIds = Array.from(
 const report = {
   source_file: 'walks.json',
   source_sha256: createHash('sha256').update(sourceText).digest('hex'),
-  migrated_walks: validatedCatalogue.walks.length,
+  migrated_walks: walks.length,
   migrated_images: validatedCatalogue.images.length,
+  catalogue_walks: validatedCatalogue.walks.length,
+  curated_batch: {
+    source_file: curatedFile,
+    source_sha256: createHash('sha256').update(curatedText).digest('hex'),
+    walks: curated.map(({ slug, source_name, last_verified_date }) => ({
+      slug,
+      source_name,
+      last_verified_date,
+    })),
+    missing_coordinates: curated
+      .filter((walk) => walk.latitude === null)
+      .map((walk) => walk.slug),
+  },
   validation_errors: [],
   quality_warnings: {
     missing_coordinates: walks
@@ -335,6 +355,6 @@ if (staleFiles.length > 0) {
 
 console.log(
   checkOnly
-    ? `Catalogue migration is current: ${walks.length} walks and ${images.length} images.`
-    : `Migrated ${walks.length} walks and ${images.length} images.`,
+    ? `Catalogue is current: ${walks.length} legacy walks, ${curated.length} curated walks and ${images.length} images.`
+    : `Generated the catalogue with ${walks.length} legacy walks, ${curated.length} curated walks and ${images.length} images.`,
 );

@@ -1,0 +1,98 @@
+[
+  {
+    "publisher": "fancy-free",
+    "source_walk_id": "kimpton",
+    "source_url": "https://fancyfreewalks.org/Chilterns/Kimpton.pdf",
+    "last_verified_date": "2026-11-25",
+    "facts": {
+      "title": "Ayot St. Lawrence and Kimpton",
+      "start_location": "Kimpton, by the church",
+      "area": "Hertfordshire",
+      "distance_miles": 5.5,
+      "route_type": "circular",
+      "difficulty": "easy",
+      "summary": "A circuit between two Hertfordshire villages, crossing meadows and woodland and visiting Ayot St. Lawrence, where George Bernard Shaw lived.",
+      "woodland": true,
+      "fields": true,
+      "parking_type": "on_street",
+      "parking_note": "The guide identifies roadside parking on Kimpton High Street (SG4 8PT)."
+    },
+    "evidence": {
+      "title": "Guide heading on page 1.",
+      "start_location": "The starting information places the start in the lane by Kimpton church.",
+      "area": "Hertfordshire appears in the region line.",
+      "distance_miles": "The headline distance gives 5½ miles.",
+      "route_type": "The starting information describes the route as a round trip.",
+      "difficulty": "The distance line describes the walking as easy.",
+      "summary": "The introduction describes the villages, meadows, woods and Shaw's connection with Ayot St. Lawrence.",
+      "woodland": "The introductory landscape description identifies wooded stretches.",
+      "fields": "The introductory landscape description identifies field paths and meadows.",
+      "parking_type": "The starting information specifies roadside parking.",
+      "parking_note": "The starting information gives the High Street location and postcode."
+    }
+  },
+  {
+    "publisher": "swc",
+    "source_walk_id": "168",
+    "source_url": "https://www.walkingclub.org.uk/walk/broxbourne-circular/SWC_Walk_168_Broxbourne_Circular.pdf",
+    "last_verified_date": "2026-11-25",
+    "facts": {
+      "title": "Broxbourne Circular",
+      "start_location": "Broxbourne Station",
+      "area": "East Hertfordshire",
+      "distance_miles": 15.1,
+      "source_duration_minutes": 330,
+      "route_type": "circular",
+      "difficulty": "challenging",
+      "summary": "A long circuit from Broxbourne Station that follows a canal before climbing into Broxbourne Woods National Nature Reserve. The distance is for the main route.",
+      "pub": true,
+      "woodland": true,
+      "paved_or_towpath": true,
+      "station_name": "Broxbourne",
+      "station_distance_miles": 0
+    },
+    "evidence": {
+      "title": "Title in the publisher's walk 168 guide.",
+      "start_location": "The start field specifies Broxbourne Station.",
+      "area": "The station notes place Broxbourne Station in East Hertfordshire.",
+      "distance_miles": "The length line gives the 15.1-mile main route.",
+      "source_duration_minutes": "The time line gives 5 hours 30 minutes of walking; it lists a separate allowance for the outing.",
+      "route_type": "The start and finish fields both specify Broxbourne Station.",
+      "difficulty": "The walk notes describe the main route as strenuous, mapped to challenging.",
+      "summary": "The walk notes identify the canal and Broxbourne Woods National Nature Reserve; the length line distinguishes alternate routes.",
+      "pub": "The walk notes describe a lunch pub on the route.",
+      "woodland": "The walk notes describe the route through the wooded nature reserve.",
+      "paved_or_towpath": "The length line identifies 1.2 miles of tarmac or concrete.",
+      "station_name": "The route begins at Broxbourne Station.",
+      "station_distance_miles": "The rail station is the route start, so the distance to it is zero."
+    }
+  },
+  {
+    "publisher": "chiltern-society",
+    "source_walk_id": "tring-winter-walk",
+    "source_url": "https://chilternsociety.org.uk/wp-content/uploads/2016/10/Tring_Winter_Walk.pdf",
+    "last_verified_date": "2026-11-25",
+    "facts": {
+      "title": "Tring winter walk",
+      "start_location": "Forge Car Park, Tring",
+      "area": "Hertfordshire",
+      "distance_miles": 4.2,
+      "route_type": "circular",
+      "summary": "A winter circuit from Tring town centre through Tring Park, with beech woodland and views towards the Vale of Aylesbury.",
+      "winter": true,
+      "woodland": true,
+      "parking_type": "car_park"
+    },
+    "evidence": {
+      "title": "Heading of the Chiltern Society guide.",
+      "start_location": "The route map places the start and finish at Forge Car Park.",
+      "area": "The guide's Stubbings Wood note places the woodland in Hertfordshire.",
+      "distance_miles": "The walk information distance field specifies 4.2 miles.",
+      "route_type": "The route map shows a loop returning to Forge Car Park.",
+      "summary": "The guide identifies Tring Park, beech woodland at Stubbings Wood and winter views from King Charles Ride.",
+      "winter": "The guide presents this as a winter walk and notes winter views.",
+      "woodland": "The route includes Stubbings Wood, described in the guide as beech woodland.",
+      "parking_type": "The publisher names a car park as the walk start."
+    }
+  }
+]

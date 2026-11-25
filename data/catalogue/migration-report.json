@@ -3,6 +3,33 @@
   "source_sha256": "718e35cff3ccb9f16892ffc5209c96b46c852def9d907e847d5403b71519e4f9",
   "migrated_walks": 290,
   "migrated_images": 845,
+  "catalogue_walks": 293,
+  "curated_batch": {
+    "source_file": "data/sources/stage-5-samples.json",
+    "source_sha256": "a6f97f40f5006ee2a0eb5d653ebffd93e65d32824f0ecef36647685e8e9e3462",
+    "walks": [
+      {
+        "slug": "fancy-free--kimpton",
+        "source_name": "Fancy Free Walks",
+        "last_verified_date": "2026-11-25"
+      },
+      {
+        "slug": "swc--168",
+        "source_name": "Saturday Walkers Club",
+        "last_verified_date": "2026-11-25"
+      },
+      {
+        "slug": "chiltern-society--tring-winter-walk",
+        "source_name": "Chiltern Society",
+        "last_verified_date": "2026-11-25"
+      }
+    ],
+    "missing_coordinates": [
+      "fancy-free--kimpton",
+      "swc--168",
+      "chiltern-society--tring-winter-walk"
+    ]
+  },
   "validation_errors": [],
   "quality_warnings": {
     "missing_coordinates": [

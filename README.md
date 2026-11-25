@@ -95,3 +95,19 @@ definitions, evidence policy, and the process for adding a walk.
 3. Spot-check several numeric slugs against `walks.json`, including walk 115.
 4. Confirm no wheelchair-friendly or dog-friendly column exists.
 5. Confirm the current production catalogue has not changed.
+
+## Stage 5: initial multi-source batch
+
+The branch adds one route each from Fancy Free Walks, Saturday Walkers Club,
+and Chiltern Society. The source batch keeps fact-by-fact evidence and review
+dates. The normal catalogue build merges it with the 290-walk legacy snapshot.
+
+### Manual Stage 5 checks
+
+1. Filter by each publisher and open its sample walk from the catalogue.
+2. Reload each source-prefixed URL and compare the title, start and distance
+   with the linked original guide.
+3. Open Map with one of the new publishers selected. The walk should still
+   appear in the results list when the sample has no verified coordinates.
+4. Compare the three generated CSV rows with the source batch before importing
+   them into the editorial Sheet in Stage 6.

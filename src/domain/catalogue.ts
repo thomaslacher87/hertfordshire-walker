@@ -135,14 +135,6 @@ export const walkSchema = z
         path: ['station_name'],
       });
     }
-
-    if (!seasonColumns.some((season) => walk[season])) {
-      context.addIssue({
-        code: 'custom',
-        message: 'At least one supported season is required.',
-        path: ['spring'],
-      });
-    }
   });
 
 export const imageSchema = z.object({

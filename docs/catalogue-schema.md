@@ -18,6 +18,10 @@ Every walk has a permanent `slug`, title, publisher name, publisher-specific
 identifier, canonical source URL, and publication status. Existing walks retain
 their numeric slugs. Future external walks use source-prefixed slugs.
 
+Stage 5 uses `fancy-free--<id>`, `swc--<id>` and
+`chiltern-society--<id>`. The ID is the publisher's walk number where
+available, or a stable identifier based on the chosen route guide.
+
 Never reuse a slug for a different walk. Set a removed walk to `archived` rather
 than deleting it, so existing links can continue to explain what happened.
 
@@ -31,6 +35,24 @@ the owner review added in Stage 7.
 Do not infer difficulty, amenities, parking, obstacles, or terrain from prose.
 During this migration, route type is normalised only when the legacy source
 title explicitly says loop, circular, linear, or figure-of-eight.
+
+For curated publisher walks, leave all four season fields unchecked when the
+guide gives no seasonal advice. Use the publisher's main route distance and
+walking time for the selected variant. Leave unverified coordinates and times
+blank. Mark a feature only when the guide explicitly supports it.
+
+## Adding a curated publisher sample before Sheet sync
+
+Add the reviewed record to the source batch under `data/sources/`. Use the
+publisher's route guide URL, the date you inspected it, a short paraphrased
+summary and a factual source note for each asserted field. The generator checks
+that every curated fact has a matching note, derives the slug, and generates
+the JSON and CSV exports. Keep maps, photos and directions on the publisher's
+website.
+
+Run `npm run catalogue:migrate` and `npm run check`. Review the generated
+diff and the `curated_batch` section of the migration report before committing.
+Carry the reviewed CSV rows into the editorial Sheet when setting up Stage 6.
 
 Wheelchair-friendly and dog-friendly attributes are intentionally absent from
 the schema, Sheet templates, filters, and generated data.

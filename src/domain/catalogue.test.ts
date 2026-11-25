@@ -54,7 +54,7 @@ describe('walk catalogue schema', () => {
     expect(walkSchema.parse(validWalk)).toEqual(validWalk);
   });
 
-  it('requires at least one supported season', () => {
+  it('allows all seasons to be unchecked when the source gives no guidance', () => {
     const result = walkSchema.safeParse({
       ...validWalk,
       spring: false,
@@ -62,7 +62,7 @@ describe('walk catalogue schema', () => {
       autumn: false,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('requires coordinate and station pairs to be complete', () => {
